@@ -14,10 +14,8 @@ version = { source = "file", path = "sani/__init__.py" }
 [tool.pdm.dev-dependencies]
 lint = ["black", "isort"]
 test = ["pytest", "pytest-asyncio"]
-dev = [
-    "loguru>=0.6.0",
-    "pre-commit>=2.20.0",
-]
+dev = ["loguru>=0.6.0", "pre-commit>=2.20.0"]
+doc = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
