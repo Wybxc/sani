@@ -16,12 +16,13 @@ async def test_emit():
         ev = ctx["event"]
         return None
 
-    tree = (
-        SaniBuilder()
-        .op(Op.AND, TypeFilter(str))
-        .op(Op.OR, TypeFilter(int))
-        .op(Op.AND, FuncFilter(endpoint))
-        .end(SaniTree())
+    tree = SaniTree()
+    tree.add_path(
+        [
+            (Op.AND, TypeFilter(str), None),
+            (Op.OR, TypeFilter(int), None),
+            (Op.AND, FuncFilter(endpoint), None),
+        ]
     )
     sani = Sani(tree)
 
@@ -48,11 +49,12 @@ async def test_emit2():
         ev = ctx["event"]
         return None
 
-    tree = (
-        SaniBuilder()
-        .op(Op.AND, TypeFilter(str))
-        .op(Op.AND, FuncFilter(endpoint))
-        .end(SaniTree())
+    tree = SaniTree()
+    tree.add_path(
+        [
+            (Op.AND, TypeFilter(str), None),
+            (Op.AND, FuncFilter(endpoint), None),
+        ]
     )
     sani = Sani(tree)
 
@@ -80,13 +82,18 @@ async def test_catch():
         ev = ctx["error"]
         return None
 
-    tree = (
-        SaniBuilder()
-        .op(Op.AND, TypeFilter(str))
-        .op(Op.AND, FuncFilter(endpoint))
-        .op(Op.CATCH, LambdaFilter(lambda ctx: isinstance(ctx["error"], RuntimeError)))
-        .op(Op.AND, FuncFilter(catcher))
-        .end(SaniTree())
+    tree = SaniTree()
+    tree.add_path(
+        [
+            (Op.AND, TypeFilter(str), None),
+            (Op.AND, FuncFilter(endpoint), None),
+            (
+                Op.CATCH,
+                LambdaFilter(lambda ctx: isinstance(ctx["error"], RuntimeError)),
+                None,
+            ),
+            (Op.AND, FuncFilter(catcher), None),
+        ]
     )
     sani = Sani(tree)
 
@@ -118,13 +125,18 @@ async def test_catch2():
         ev = err
         return None
 
-    tree = (
-        SaniBuilder()
-        .op(Op.AND, TypeFilter(str))
-        .op(Op.AND, FuncFilter(endpoint))
-        .op(Op.CATCH, LambdaFilter(lambda ctx: isinstance(ctx["error"], ValueError)))
-        .op(Op.OR, RaiseFilter())
-        .end(SaniTree())
+    tree = SaniTree()
+    tree.add_path(
+        [
+            (Op.AND, TypeFilter(str), None),
+            (Op.AND, FuncFilter(endpoint), None),
+            (
+                Op.CATCH,
+                LambdaFilter(lambda ctx: isinstance(ctx["error"], ValueError)),
+                None,
+            ),
+            (Op.OR, RaiseFilter(), None),
+        ]
     )
     sani = Sani(tree, catch=catcher)
 
@@ -147,11 +159,11 @@ async def test_multi_path():
         flags.add("str")
         return None
 
-    tree = (
-        SaniBuilder()
-        .op(Op.AND, TypeFilter(str))
-        .op(Op.AND, FuncFilter(handle_str))
-        .end(tree)
+    tree.add_path(
+        [
+            (Op.AND, TypeFilter(str), None),
+            (Op.AND, FuncFilter(handle_str), None),
+        ]
     )
 
     async def handle_int(ctx: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -159,11 +171,11 @@ async def test_multi_path():
         flags.add("int")
         return None
 
-    tree = (
-        SaniBuilder()
-        .op(Op.AND, TypeFilter(int))
-        .op(Op.AND, FuncFilter(handle_int))
-        .end(tree)
+    tree.add_path(
+        [
+            (Op.AND, TypeFilter(int), None),
+            (Op.AND, FuncFilter(handle_int), None),
+        ]
     )
 
     async def handle_list_or_dict(ctx: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -171,12 +183,12 @@ async def test_multi_path():
         flags.add("list_or_dict")
         return None
 
-    tree = (
-        SaniBuilder()
-        .op(Op.AND, TypeFilter(list))
-        .op(Op.OR, TypeFilter(dict))
-        .op(Op.AND, FuncFilter(handle_list_or_dict))
-        .end(tree)
+    tree.add_path(
+        [
+            (Op.AND, TypeFilter(list), None),
+            (Op.OR, TypeFilter(dict), None),
+            (Op.AND, FuncFilter(handle_list_or_dict), None),
+        ]
     )
 
     async def throw(err: Exception):
@@ -192,3 +204,56 @@ async def test_multi_path():
 
     await sani.emit({})
     assert "list_or_dict" in flags
+
+
+@pytest.mark.asyncio
+async def test_subtree():
+    ev = None
+    sub_tree = SaniTree()
+
+    async def endpoint(ctx: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        nonlocal ev
+        assert ctx.get("parsed") is not None
+        ev = ctx["parsed"]
+        return None
+
+    sub_tree.add_path(
+        [
+            (Op.AND, FuncFilter(endpoint), None),
+        ]
+    )
+
+    tree = SaniTree()
+
+    async def parse_int(ctx: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        return {"parsed": ctx["event"] + 1}
+
+    tree.add_path(
+        [
+            (Op.AND, TypeFilter(int), None),
+            (Op.AND, FuncFilter(parse_int), sub_tree),
+        ]
+    )
+
+    async def parse_str(ctx: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        return {"parsed": ctx["event"] + "1"}
+
+    tree.add_path(
+        [
+            (Op.AND, TypeFilter(str), None),
+            (Op.AND, FuncFilter(parse_str), sub_tree),
+        ]
+    )
+
+    async def throw(err: Exception):
+        raise err
+
+    sani = Sani(tree, catch=throw)
+
+    ev = None
+    await sani.emit(123)
+    assert ev == 124
+
+    ev = None
+    await sani.emit("123")
+    assert ev == "1231"

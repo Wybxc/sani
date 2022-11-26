@@ -216,23 +216,6 @@ class CowRef(Generic[T]):
     __copy__ = copy
 
 
-class SaniBuilder:
-    path: List[Tuple[Op, Filter, Optional[SaniTree]]]
-
-    def __init__(self):
-        self.path = []
-
-    def op(
-        self, op: Op, filter: Filter, branch: Optional[SaniTree] = None
-    ) -> SaniBuilder:
-        self.path.append((op, filter, branch))
-        return self
-
-    def end(self, root: SaniTree) -> SaniTree:
-        root.add_path(self.path)
-        return root
-
-
 @dataclass(eq=True, frozen=True)
 class UnitFilter(Filter):
     """单元过滤器。"""
