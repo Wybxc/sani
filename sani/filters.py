@@ -5,6 +5,19 @@ from sani.core import Filter
 
 
 @dataclass(eq=True, frozen=True)
+class UnitFilter(Filter):
+    """单元过滤器。
+
+    （待补充）
+    """
+
+    __slots__ = ()
+
+    async def filter(self, _: dict[str, Any], /) -> Optional[dict[str, Any]]:
+        return {}
+
+
+@dataclass(eq=True, frozen=True)
 class TypeFilter(Filter):
     """类型过滤器。"""
 

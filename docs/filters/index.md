@@ -1,5 +1,5 @@
-# Sani
+# 过滤器
 
-::: sani
+::: sani.filters
     options:
         members: no

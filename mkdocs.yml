@@ -32,28 +32,24 @@ theme:
   icon:
     repo: fontawesome/brands/github
     logo: material/curtains
-  favicon: images/favicon.png
+  favicon: _assets/images/favicon.png
 extra_css:
-  - extra/heti.css
-  - extra/extra.css
+  - _assets/extra/heti.css
+  - _assets/extra/extra.css
 extra_javascript:
-  - extra/heti.js
-  - extra/extra.js
+  - _assets/extra/heti.js
+  - _assets/extra/extra.js
 
 watch:
   - sani
 
-nav:
-  - 开始: index.md
-  - 'Sani 核心':
-      - 'Sani 核心': core/index.md
-      - Filter: core/Filter.md
-      - SaniTree: core/SaniTree.md
-
 plugins:
   - search
+  - literate-nav:
+      nav_file: SUMMARY.md
   - mkdocstrings:
       default_handler: python
+      custom_templates: docs/_assets/overrides
       handlers:
         python:
           import:
@@ -65,10 +61,10 @@ plugins:
             docstring_style: google
             show_submodules: no
             show_bases: no
-            show_source: no
+            show_source: yes
             show_signature_annotations: yes
             separate_signature: yes
-            docstring_section_style: list
+            docstring_section_style: table
             line_length: 80
 
 markdown_extensions:

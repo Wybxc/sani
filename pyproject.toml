@@ -15,7 +15,12 @@ version = { source = "file", path = "sani/__init__.py" }
 lint = ["black", "isort"]
 test = ["pytest", "pytest-asyncio"]
 dev = ["loguru>=0.6.0", "pre-commit>=2.20.0"]
-doc = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
+doc = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "mkdocs-literate-nav",
+]
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
